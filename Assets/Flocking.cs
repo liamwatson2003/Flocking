@@ -9,7 +9,8 @@ public class Flocking : MonoBehaviour {
     public float minSpeed = 0.8f;
     public float rotateSpeed;
     public float speedAdjustment;
-    private bool catchup;
+    public int CheckNumber = 3;
+    Collider[] ObjectsHit;
 
     public float searchRadius;
 
@@ -17,42 +18,52 @@ public class Flocking : MonoBehaviour {
 	// Use this for initialization
 	void Start ()
     {
-        catchup = false;
+        ObjectsHit = new Collider[CheckNumber];
         speed = Random.Range(minSpeed, maxSpeed);
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
+        transform.Rotate(Vector3.up * Time.deltaTime * Random.Range(3,45));
         //move the object forward
-        transform.Translate(Vector3.forward * speed * Time.deltaTime * (catchup ? speedAdjustment : 1));
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);
 
         //check for other objects within range
-        Collider[] ObjectsHit = Physics.OverlapSphere(transform.position, searchRadius);
+        
+        Physics.OverlapSphereNonAlloc(transform.position, searchRadius, ObjectsHit);
         if (ObjectsHit.Length > 1)
         {
             foreach (Collider CObject in ObjectsHit)
             {
-                
-                    Debug.Log("collider working");
-                    //get the other objects speed
-                    float otherspeed = CObject.transform.GetComponent<Flocking>().speed;
+
+                //change rotation
+                float step = rotateSpeed * Time.deltaTime;
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, CObject.transform.rotation, step);
+
+                //get the other objects speed
+                float otherspeed = CObject.transform.GetComponent<Flocking>().speed;
 
                     //average the speed out between th other objects
                     if (speed < otherspeed && speed <= maxSpeed)
-                    {
-                        speed += speedAdjustment;
+                    {  
+                        speed += speedAdjustment *2;
                     }
-                    else if (speed > otherspeed && speed >= minSpeed)
+                    if (speed > otherspeed && speed >= minSpeed)
                     {
-                        speed -= speedAdjustment;
+                        speed -= speedAdjustment*2;
                     }
-                    //adding break here increased performance massivly
-                    break;
-                
+                //adding break here increased performance massivly
+                break;
             }
         }
+        if (ObjectsHit.Length <= 1)
+        {
+            int RND = Random.Range(0, 2);
+            if (RND == 0 && speed <= maxSpeed)
+                speed += speedAdjustment;
+            else if (RND == 1 && speed >= minSpeed)
+                speed -= speedAdjustment;
+        }
     }
-
-
 }
