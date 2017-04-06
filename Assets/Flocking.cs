@@ -12,6 +12,10 @@ public class Flocking : MonoBehaviour {
     public int CheckNumber = 3;
     Collider[] ObjectsHit;
 
+    public float minimumDistance = 5;
+
+    public bool rotateaway = false;
+
     public float searchRadius;
 
 
@@ -21,7 +25,8 @@ public class Flocking : MonoBehaviour {
         ObjectsHit = new Collider[CheckNumber];
         speed = Random.Range(minSpeed, maxSpeed);
 	}
-	
+
+
 	// Update is called once per frame
 	void Update ()
     {
@@ -32,14 +37,27 @@ public class Flocking : MonoBehaviour {
         //check for other objects within range
         
         Physics.OverlapSphereNonAlloc(transform.position, searchRadius, ObjectsHit);
-        if (ObjectsHit.Length > 1)
-        {
+        
             foreach (Collider CObject in ObjectsHit)
             {
-
                 //change rotation
                 float step = rotateSpeed * Time.deltaTime;
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, CObject.transform.rotation, step);
+
+            /*
+                //need to rotate away from other object
+                Vector3 offset = transform.position - CObject.transform.position;
+                float sqrLen = offset.sqrMagnitude;
+                Debug.Log(sqrLen);
+                if (sqrLen < minimumDistance * minimumDistance)
+                    print("The other transform is close to me!");
+            */
+
+                if (rotateaway)
+                {
+                    Quaternion direction = transform.rotation * CObject.transform.rotation;
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, direction, step);
+                }
 
                 //get the other objects speed
                 float otherspeed = CObject.transform.GetComponent<Flocking>().speed;
@@ -56,7 +74,7 @@ public class Flocking : MonoBehaviour {
                 //adding break here increased performance massivly
                 break;
             }
-        }
+        
         if (ObjectsHit.Length <= 1)
         {
             int RND = Random.Range(0, 2);
