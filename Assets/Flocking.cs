@@ -10,7 +10,9 @@ public class Flocking : MonoBehaviour {
     
     public float speedAdjustment;
     public int CheckOtherNumber = 3;
-    Collider[] ObjectsHit;
+
+    //need to work out allocation of the array for the bird locating other birds
+    public Collider[] ObjectsHit;
 
     public float CheckOtherSearchRadius;
     public bool AlignWithOther = false;
@@ -21,18 +23,23 @@ public class Flocking : MonoBehaviour {
     public bool Circling = false;
     public float CirclingRotateMin;
     public float CirclingRotateMax;
+
     public bool Catchup;
     public float CatchupSpeed = 1;
     public float CatchupMinDistance;
 
-    public bool rotateAwayFromOther = false;
-    public float rotateAwayFromOtherSpeed;
+    public bool TooClose;
+    public float TooCloseSpeed = 1;
+    public float TooCloseDistance;
 
-    public float rotateAwayFromDetectionRange = 5;
+    
+
+    
     private int turndir;
     // Use this for initialization
     void Start ()
     {
+        //create a new array to the size of our spec
         ObjectsHit = new Collider[CheckOtherNumber];
         speed = Random.Range(minSpeed, maxSpeed);
         turndir = Random.Range(0, 2);
@@ -64,74 +71,84 @@ public class Flocking : MonoBehaviour {
             }
 
         }
-        //is the flock circling.
-        
 
-        //move the object forward
-        transform.Translate(Vector3.forward * speed * Time.deltaTime * CatchupSpeed);
+            //move the object forward
+            transform.Translate(Vector3.forward * speed * Time.deltaTime);
 
+        //set the array to null before use
+        for (int i = 0; i < CheckOtherNumber; i++)
+        {
+            ObjectsHit[i] = null;
+        }
 
         //check for other objects within range
         Physics.OverlapSphereNonAlloc(transform.position, CheckOtherSearchRadius, ObjectsHit);
         
             foreach (Collider CObject in ObjectsHit)
             {
-            //make sure where not hitting ourself
-            if (CObject.transform.position != transform.position)
+            if (CObject != null)
             {
-                //try and catchup with the other object
-                if (Catchup)
+                //make sure where not hitting ourself
+                if (CObject.transform.position != transform.position)
                 {
-                    //get a vector 3 offset from the other object
-                    Vector3 offset = transform.position - CObject.transform.position;
-                    //get the magnitude
-                    float sqrLen = offset.sqrMagnitude;
-                    //when too close we will run this next lot of code
-                    if (sqrLen > CatchupMinDistance)
+                    //try and catchup with the other object
+                    if (Catchup)
                     {
-                        Debug.Log("catching up");
-                        transform.position = Vector3.MoveTowards(transform.position, CObject.transform.position, CatchupSpeed * Time.deltaTime);
+                        //get a vector 3 offset from the other object
+                        Vector3 offset = transform.position - CObject.transform.position;
+                        //get the magnitude
+                        float sqrLen = offset.sqrMagnitude;
+                        //when too close we will run this next lot of code
+                        if (sqrLen > CatchupMinDistance)
+                        {
+                            Debug.Log("catching up, mag = " + sqrLen + " , this is the catchup distance " + CatchupMinDistance);
+                            transform.position = Vector3.MoveTowards(transform.position, CObject.transform.position, CatchupSpeed * Time.deltaTime);
+                        }
                     }
-                }
 
-                if (AlignWithOther)
-                {
-                    //alline our rotation to the other objects
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation, CObject.transform.rotation, AlignSpeed * Time.deltaTime);
-                }
-
-                if (rotateAwayFromOther)
-                {
-                    //get a vector 3 offset from the other object
-                    Vector3 offset = transform.position - CObject.transform.position;
-                    //get the magnitude
-                    float sqrLen = offset.sqrMagnitude;
-                    //when too close we will run this next lot of code
-                    if (sqrLen < rotateAwayFromDetectionRange)
+                    if (TooClose)
                     {
-                        transform.rotation *= Quaternion.Euler(0, Random.Range(rotateAwayFromOtherSpeed - rotateAwayFromOtherSpeed, rotateAwayFromOtherSpeed), 0);
+                        //get a vector 3 offset from the other object
+                        Vector3 offset2 = transform.position - CObject.transform.position;
+                        //get the magnitude
+                        float sqrLen2 = offset2.sqrMagnitude;
+                        //when too close we will run this next lot of code
+                        if (sqrLen2 < TooCloseDistance)
+                        {
+                            Quaternion old = transform.rotation;
+                            Debug.Log("cMoving away, mag = " + sqrLen2 + " , this is the move away distance " + TooCloseDistance);
+                            transform.LookAt(CObject.transform);
+                            transform.Rotate(0, 180, 0);
+                            transform.Translate(Vector3.forward * TooCloseSpeed * Time.deltaTime);
+                            transform.rotation = old;
+                        }
                     }
-                    
 
-                }
 
-                //get the other objects speed
-                float otherspeed = CObject.transform.GetComponent<Flocking>().speed;
+                    if (AlignWithOther)
+                    {
+                        //alline our rotation to the other objects
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation, CObject.transform.rotation, AlignSpeed * Time.deltaTime);
+                    }
 
-                //average the speed out between th other objects
-                if (speed < otherspeed && speed <= maxSpeed)
-                {
-                    speed += speedAdjustment * 2;
+                  
+
+                    //get the other objects speed
+                    float otherspeed = CObject.transform.GetComponent<Flocking>().speed;
+
+                    //average the speed out between th other objects
+                    if (speed < otherspeed && speed <= maxSpeed)
+                    {
+                        speed += speedAdjustment * 2;
+                    }
+                    if (speed > otherspeed && speed >= minSpeed)
+                    {
+                        speed -= speedAdjustment * 2;
+                    }
+                    //break;
+                    //adding break here increased performance massivly
                 }
-                if (speed > otherspeed && speed >= minSpeed)
-                {
-                    speed -= speedAdjustment * 2;
-                }
-                break;
-                //adding break here increased performance massivly
             }
-            //testing to see if the birds put different birds in there storage 
-            System.Array.Clear(ObjectsHit, 0, CheckOtherNumber);
         }
         /////////////
        
