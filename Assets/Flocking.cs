@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Flocking : MonoBehaviour {
+    public Animator anim;
 
     public float speed;
     public float maxSpeed = 1.2f;
@@ -39,6 +40,7 @@ public class Flocking : MonoBehaviour {
     // Use this for initialization
     void Start ()
     {
+        anim.speed = Random.Range(1, 3);
         //create a new array to the size of our spec
         ObjectsHit = new Collider[CheckOtherNumber];
         speed = Random.Range(minSpeed, maxSpeed);
